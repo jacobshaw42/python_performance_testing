@@ -10,31 +10,31 @@ def transform_apply(df: pd.DataFrame):
     ts = dt.now()
     ##### boolean type conversion
     ### astype is fastest
-    # apply
+    # apply lambda
     s = dt.now()
     df['rule_47_flag'].apply(lambda x: bool(x) if x in ('0','1') else None)
     print('apply boolean type conversion: ', dt.now() - s)
-    # map
+    # map lambda
     s = dt.now()
     df['rule_47_flag'].map(lambda x: bool(x) if x in ('0','1') else None)
     print('map boolean type conversion: ',dt.now()-s)
-    # astype
+    # pd.Series.astype
     s = dt.now()
     df['rule_47_flag'].astype(bool)
     print('native boolean type conversion: ',dt.now()-s)
     df['rule_47_flag'] = df['rule_47_flag'].astype(bool)
     
-    ##### string manipulation
+    ##### string concat
     ### native cat is about half the time of the other two
-    # apply
+    # apply lambda
     s = dt.now()
     df['filing_date'].apply(lambda x: "".join([x, " 01:12:05"]))
     print('apply string manip ', dt.now() - s)
-    # map
+    # map lambda
     s = dt.now()
     df['filing_date'].map(lambda x: "".join([x, " 01:12:05"]))
     print('map string manip ', dt.now() - s)
-    # native cat
+    # simple concat
     s = dt.now()
     df['filing_date'] + " 01:12:05"
     print('native cat string manip ', dt.now() - s)
@@ -42,15 +42,15 @@ def transform_apply(df: pd.DataFrame):
     
     ##### date conversion
     ### pandas to datetime is by far fastest even with an additional filtering assignment for None
-    # apply, commented out for taking 25 seconds
+    # apply lambda
     s = dt.now()
     df['filing_date'].apply(lambda x: dt.strptime(x, '%Y-%m-%d %H:%M:%S').date())
     print('apply date conversion: ', dt.now() -s)
-    # map, commented out for taking 25 seconds
+    # map lambda
     s = dt.now()
     df['filing_date'].map(lambda x: dt.strptime(x, '%Y-%m-%d %H:%M:%S').date())
     print('map date conversion: ', dt.now() -s)
-    # pandas to datetime
+    # pandas to_datetime
     s = dt.now()
     df['filing_date'] = pd.to_datetime(df['filing_date'],format='%Y-%m-%d %H:%M:%S',errors='coerce').dt.date
     df.loc[df['filing_date'].isna(),'filing_date'] = None
@@ -59,11 +59,11 @@ def transform_apply(df: pd.DataFrame):
     
     ##### hashing
     ### hash astype values sum
-    # apply join cat string
+    # apply lambda
     s = dt.now()
     df.apply(hash_join, axis=1)
     print('apply join hashing: ', dt.now() - s)
-    # apply hash astype values sum, 5 seconds
+    # astype str sum concat
     s = dt.now()
     df['hashes'] = hashlib.md5(df.astype(str).values.sum(axis=1)).hexdigest()
     print('hash astype values sum: ', dt.now() - s)
@@ -71,6 +71,8 @@ def transform_apply(df: pd.DataFrame):
     
 # this for loop is over twice as long for a single and simple column manipulation as the entire function above it
 # near 3 minutes
+# boolean type conversion
+# iterrows for loop 
 def transform_loop(df: pd.DataFrame):
     s = dt.now()
     for i, row in df.iterrows():
@@ -78,7 +80,7 @@ def transform_loop(df: pd.DataFrame):
         row['rule_47_flag'] = bool(x) if x in ('0','1') else None
     print('boolean type conversion iterrows for loop: ',dt.now() - s)
 
-print('-'*20, 'test pandas')
+
 transform_apply(df)
 
 transform_loop(df)

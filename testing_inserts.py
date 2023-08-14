@@ -4,16 +4,25 @@ from datetime import datetime as dt
 import sqlalchemy as sa
 from dask.diagnostics import ProgressBar
 from bcpandas import to_sql, SqlCreds
+from config import user, password, database, server, port
 
 
-#conn = sqlite3.connect("testing.db")
 file = "g_application.tsv"
-constr = "mssql+pyodbc://SA:password1!@localhost:1433/testdb?driver=ODBC+Driver+17+for+SQL+Server"
-engine = sa.create_engine(constr)
+constr = f"mssql+pyodbc://{user}:{password}@{server}:{port}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
+engine = sa.create_engine(constr, fast_executemany=True)
 creds = SqlCreds.from_engine(engine)
 
+def pandas_test(file, engine):
+    print('-'*20, 'pandas inserts')
+    s = dt.now()
+    print("reading file")
+    pdf = pd.read_csv(file, sep="\t", dtype=str)
+    pdf.to_sql('pandas_inserts', con=engine,chunksize=10000, schema='dbo', if_exists='replace')
+    print(dt.now() - s)
+    del pdf
 
-def pandas_test(file, creds):
+def bcpandas_test(file, creds):
+    print('-'*20, 'bcpandas inserts')
     s = dt.now()
     print("reading file")
     pdf = pd.read_csv(file, sep="\t",dtype=str)
@@ -23,16 +32,17 @@ def pandas_test(file, creds):
     del pdf
 
 def dask_test_all_at_once(file, constr):
+    print('-'*20, 'dask full dataframe inserts')
     pbar = ProgressBar()
     pbar.register()
     s = dt.now()
     ddf = dd.read_csv(file, sep="\t",dtype=str)
     ddf.to_sql("dask_inserts", uri=constr, if_exists="replace", index=False, engine_kwargs={"fast_executemany":True},compute=True)
     print(dt.now() - s)
-    # first take, 10 minutes for 50M records in 2.7GB file
     del ddf
     
 def dask_test_one_partition(file, constr, table_name):
+    print('-'*20, 'dask by partitions inserts')
     pbar = ProgressBar()
     pbar.register()
     s = dt.now()
@@ -45,10 +55,9 @@ def dask_test_one_partition(file, constr, table_name):
             partition.to_sql(table_name, uri=constr, if_exists="append", index=False, engine_kwargs={"fast_executemany":True},compute=True)
     print(dt.now() - s)
     del ddf
-    # Low memory usage, negliable in time compared to all at once
 
-
-pandas_test(file, creds)
-dask_test_all_at_once(file, constr)
-dask_test_one_partition(file, constr,"g_app")
+pandas_test(file, engine)
+#bcpandas_test(file, creds)
+#dask_test_all_at_once(file, constr)
+#dask_test_one_partition(file, constr,"dask_partitions_inserts")
 

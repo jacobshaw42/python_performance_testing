@@ -6,7 +6,6 @@ import hashlib
 import pandas as pd
 
 file = "g_application.tsv"
-test_file = "test_g_cpc_current.tsv"
 new_file = "g_application2.tsv"
 constr = "mssql+pyodbc://SA:password1!@localhost:1433/testdb?driver=ODBC+Driver+17+for+SQL+Server"
 engine = sa.create_engine(constr)
