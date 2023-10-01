@@ -36,8 +36,8 @@ def dask_test_all_at_once(file, constr):
     pbar = ProgressBar()
     pbar.register()
     s = dt.now()
-    ddf = dd.read_csv(file, sep="\t",dtype=str)
-    ddf.to_sql("dask_inserts", uri=constr, if_exists="replace", index=False, engine_kwargs={"fast_executemany":True},compute=True)
+    ddf = dd.read_csv(file, sep="\t",dtype=str, blocksize="16MB")
+    ddf.to_sql("dask_inserts", uri=constr, if_exists="replace", index=False, engine_kwargs={"fast_executemany":True},compute=True, chunksize=10000)
     print(dt.now() - s)
     del ddf
     
@@ -50,14 +50,31 @@ def dask_test_one_partition(file, constr, table_name):
     for i in range(ddf.npartitions):
         partition=ddf.get_partition(i)
         if i == 0:
-            partition.to_sql(table_name, uri=constr, if_exists="replace", index=False, engine_kwargs={"fast_executemany":True},compute=True)
+            partition.to_sql(table_name, uri=constr, if_exists="replace", index=False, engine_kwargs={"fast_executemany":True},compute=True, chunksize=10000)
         elif i > 0:
-            partition.to_sql(table_name, uri=constr, if_exists="append", index=False, engine_kwargs={"fast_executemany":True},compute=True)
+            partition.to_sql(table_name, uri=constr, if_exists="append", index=False, engine_kwargs={"fast_executemany":True},compute=True, chunksize=10000)
     print(dt.now() - s)
     del ddf
 
-pandas_test(file, engine)
-#bcpandas_test(file, creds)
+def dask_test_one_partition_bcpandas(file, creds, table_name):
+    print('-'*20, 'dask by partitions inserts')
+    pbar = ProgressBar()
+    pbar.register()
+    s = dt.now()
+    ddf = dd.read_csv(file, sep="\t",blocksize="16MB",dtype=str)
+    for i in range(ddf.npartitions):
+        partition=ddf.get_partition(i)
+        if i == 0:
+            to_sql(partition.compute(), table_name=table_name,creds=creds, index=False, if_exists='replace',batch_size=10000)
+            #partition.to_sql(table_name, uri=constr, if_exists="replace", index=False, engine_kwargs={"fast_executemany":True},compute=True, chunksize=10000)
+        elif i > 0:
+            to_sql(partition.compute(), table_name=table_name,creds=creds, index=False, if_exists='append',batch_size=10000)
+            #partition.to_sql(table_name, uri=constr, if_exists="append", index=False, engine_kwargs={"fast_executemany":True},compute=True, chunksize=10000)
+    print(dt.now() - s)
+    del ddf
+
+#pandas_test(file, engine)
+bcpandas_test(file, creds)
 #dask_test_all_at_once(file, constr)
 #dask_test_one_partition(file, constr,"dask_partitions_inserts")
-
+#dask_test_one_partition_bcpandas(file, creds, 'dask_bcpandas_inserts')

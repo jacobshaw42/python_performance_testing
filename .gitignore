@@ -162,6 +162,7 @@ cython_debug/
 # large files
 *.tsv*
 *.db
+*.csv
 
 # config
 config.py

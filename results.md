@@ -16,16 +16,23 @@ In an order to determine what process would be most effective for certain scenar
 
 Using `testing_inserts.py` from the python_performance_testing the following results were determined monitoring Ubuntu's `top` command for memory and using python's `datetime` package for tracking time.
 
-|          Method           | VIRT Mem (GB) | RES Mem (GB) | Time (minutes) | Number of Records |
-|---------------------------|---------------|--------------|----------------|-------------------|
-| pandas to_sql             | 2.7-3.2       | 2.3-2.8      | 2:07           | 8433988           |
-| bcpandas                  | 1.8-3.1       | 1.5-2.4      | 1:25           | 8433988           |
-| dask (full load)          | 2.2-3.4       | 1.7-2.8      | 1:45           | 8433988           |
-| dask (by partition, 16MB) | 1.4-1.8       | 0.7-1.1      | 1:47           | 8433988           |
+|          Method                | VIRT Mem (GB) | RES Mem (GB) | Time (minutes) | Number of Records | Records per second |
+|--------------------------------|---------------|--------------|----------------|-------------------|--------------------|
+| pandas to_sql                  | 2.7-3.2       | 2.3-2.8      | 2:07           | 8433988           | 66409              |
+| bcpandas                       | 1.8-3.1       | 1.5-2.4      | 1:25           | 8433988           | 99223              |
+| dask (full load)               | 1.6-2.8       | 0.8-2.1      | 1:45           | 8433988           | 80323              |
+| dask (by partition, 16MB)      | 0.8           | 0.3          | 1:47           | 8433988           | 78822              |
+| dask partition (16MB) bcpandas | 1.1           | 0.3          | 1:29           | 8433988           | 126757             |
 
-The results clearly display a speed advantage for bcpandas, while still outperforming memory usage for a dask full load.
+The most obvious result is that pandas to_sql is the worst on resource usage and speed.
 
-Using dask by 16MB partitions, we can see a clear advantage for lower memory usage, but longest time. The increase from a full dask load is neglible. However, the time differnce between bcpandas and dask is considerable. If the low use of memory is a priority, it is clear to use dask by partitions. If memory is not a concern, bcpandas is definitely a faster insert process.
+For bcpandas, the results clearly display a speed advantage for the cost of memory utilization.
+
+When it comes to dask, we see a slight slow down from bcpandas, but a huge decrease in memory utilization. Especially when using partitions.
+
+It is worth noting that using a full dask load (not by partition), the memory usage does not flux like pandas and bcpandas. The memory starts at the top range and progresses downward. However, the marginal speed advantage is probably not worth it at any file size.
+
+The answer for most cases is quite possibly using dask by partition with bcpandas. This takes advantage of the low memory cost without taking considerably longer.
 
 ## Testing Pandas Manipulation
 
