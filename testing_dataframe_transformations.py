@@ -80,7 +80,6 @@ def transform_loop(df: pd.DataFrame):
         row['rule_47_flag'] = bool(x) if x in ('0','1') else None
     print('boolean type conversion iterrows for loop: ',dt.now() - s)
 
-
 transform_apply(df)
 
 transform_loop(df)
