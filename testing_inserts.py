@@ -10,19 +10,19 @@ import pymssql
 file = "g_application.tsv"
 constr = f"mssql+pyodbc://{user}:{password}@{server}:{port}/{database}?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes"
 constr = "mssql+pyodbc:///?odbc_connect=Driver={ODBC+Driver+17+for+SQL+Server};Server="+server+";Database="+database+";UID="+user+";PWD="+password+";TrustServerCertificate=yes"
-engine = sa.create_engine(
-    constr, 
-    #fast_executemany=True, 
-    #connect_args={"TrustServerCertificate":"yes"}
-)
-creds = SqlCreds(
-    server=server,
-    database=database,
-    username=user,
-    password=password,
-    driver_version="ODBC Driver 17 for SQL Server"
-)
-creds = SqlCreds.from_engine(engine)
+# engine = sa.create_engine(
+#     constr, 
+#     #fast_executemany=True, 
+#     #connect_args={"TrustServerCertificate":"yes"}
+# )
+# creds = SqlCreds(
+#     server=server,
+#     database=database,
+#     username=user,
+#     password=password,
+#     driver_version="ODBC Driver 17 for SQL Server"
+# )
+# creds = SqlCreds.from_engine(engine)
 
 def pandas_test(file, engine):
     print('-'*20, 'pandas inserts')
