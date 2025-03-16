@@ -151,18 +151,31 @@ def pymssql_test_one_partition(file):
 @profile
 def pymssql_test_pandas_chunk(file):
     conn = pymssql.connect(server, user, password, database)
+    table_name = "pandas_inserts"
+    schema = "dbo"
     print('-'*20, 'pymssql bulk copy')
     cur = conn.cursor()
-    cur.execute("TRUNCATE TABLE dbo.pandas_inserts")
+    cur.execute(f"TRUNCATE TABLE {schema}.{table_name}")
     conn.commit()
     s = dt.now()
+    
+    memory_check("before full read")
+    cur.execute(f"""
+        SELECT COLUMN_NAME, ORDINAL_POSITION
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = '{schema}'
+        AND TABLE_NAME = '{table_name}'
+    """)
+    columns_ids = dict(cur.fetchall())
+    
     for i, chunk in enumerate(pd.read_csv(file, sep="\t",chunksize=100000,dtype=str)):
         chunk["InsertingProcess"] = "bulk_copy"
         records = chunk.to_records(index=False).tolist()
+        tmp_columns_ids = [columns_ids[c] for c in chunk.columns]
         conn.bulk_copy(
-            "dbo.pandas_inserts",
+            f"{schema}.{table_name}",
             records,
-            column_ids=[2,3,4,5,6,7,8],
+            column_ids=tmp_columns_ids,
             batch_size=10000,
         )
         conn.commit()

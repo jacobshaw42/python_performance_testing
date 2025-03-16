@@ -26,6 +26,8 @@ def profile(func):
         return result
     return wrapper
 
-def memory_check():
+def memory_check(msg: str = None):
+    if msg:
+        print((msg))
     rss, vms = process_memory()
     print(f"current consumed res memory/virtual memory: {round(rss, 2)}/{round(vms, 2)} GB")
