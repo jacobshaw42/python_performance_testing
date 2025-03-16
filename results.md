@@ -24,7 +24,8 @@ Using `testing_inserts.py` from the python_performance_testing the following res
 | dask (by partition, 16MB)      | 0.8           | 0.3          | 1:47           | 8433988           | 78822              |
 | dask partition (16MB) bcpandas | 1.1           | 0.3          | 1:29           | 8887790           | 99014              |
 | pymssql all at once            | 1.1           | 0.4          | 1:36           | 8887790           | 91794              |
-| pymssql                        | 1.1           | 0.2          | 1:42           | 8887790           | 86394              |
+| pymssql dask partitions        | 1.1           | 0.2          | 1:42           | 8887790           | 86394              |
+| pymssql pandas read generator  | 0.8           | 0.2          | 1:20           | 8887790           | 102158             |
 
 The most obvious result is that pandas to_sql is the worst on resource usage and speed.
 

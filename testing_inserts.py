@@ -6,7 +6,8 @@ from dask.diagnostics import ProgressBar
 from bcpandas import to_sql, SqlCreds
 from config import user, password, database, server, port
 import pymssql
-from memory_monitor import profile
+from memory_monitor import profile, memory_check
+import os
 
 file = "g_application.tsv"
 constr = f"mssql+pyodbc://{user}:{password}@{server}:{port}/{database}?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes"
@@ -146,6 +147,28 @@ def pymssql_test_one_partition(file):
         del pdf
     e = dt.now()
     print("bulk copy time to execute: ",e-s)
+    
+@profile
+def pymssql_test_pandas_chunk(file):
+    conn = pymssql.connect(server, user, password, database)
+    print('-'*20, 'pymssql bulk copy')
+    cur = conn.cursor()
+    cur.execute("TRUNCATE TABLE dbo.pandas_inserts")
+    conn.commit()
+    s = dt.now()
+    for i, chunk in enumerate(pd.read_csv(file, sep="\t",chunksize=100000,dtype=str)):
+        chunk["InsertingProcess"] = "bulk_copy"
+        records = chunk.to_records(index=False).tolist()
+        conn.bulk_copy(
+            "dbo.pandas_inserts",
+            records,
+            column_ids=[2,3,4,5,6,7,8],
+            batch_size=10000,
+        )
+        conn.commit()
+        memory_check()
+    e = dt.now()
+    print("bulk copy time to execute: ",e-s)
 
 @profile
 def pymssql_test_one_stream(file):
@@ -187,10 +210,12 @@ def pymssql_test_one_stream(file):
     e = dt.now()
     print("bulk copy time to execute: ",e-s)
 
+print(os.getpid())
 #pandas_test(file, engine)
 #bcpandas_test(file, creds)
 #dask_test_all_at_once(file, constr)
 #dask_test_one_partition(file, constr,"dask_inserts")
 #dask_test_one_partition_bcpandas(file, 'dask_bcpandas_inserts')
 #pymssql_test_one_partition(file)
-pymssql_test_one_stream(file)
+pymssql_test_pandas_chunk(file)
+#pymssql_test_one_stream(file)
